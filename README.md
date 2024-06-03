@@ -26,3 +26,4 @@ Before user can control the step motor, the user must initialize the stepper at 
 PDF Manual
 ----------
 Simple Step Product Manual-2.pdf
+# amalajaison

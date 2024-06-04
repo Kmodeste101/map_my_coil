@@ -13,7 +13,6 @@ class acc:
         first_read=self.CheckReadUntil("voltage>\r\n")
         print(first_read)
 
-
     def CheckReadUntil(self,readUntil):
         outputCharacters=""
         while True:
@@ -71,20 +70,4 @@ class acc:
         else:
             print("Failed to set all voltages to zero")
 
-    def set_all_voltages(self):
-        with open('current.csv','r') as file:
-            for line in file:
-                if line.strip():  # Skip empty lines
-                    try:
-                        coil,current=map(float,line.strip().split(","))
-                        coil=int(coil)
-                        current=float(current)
-                        if coil<0 or coil>49:
-                            print("Invalid coil %d"%(coil))
-                        else:
-                            print("Setting coil %2d %10.6f"%(coil,current))
-                            self.set_current(coil,current)
-                    except ValueError:
-                        print("Error parsing line:", line)
-        #write_eeprom()
 

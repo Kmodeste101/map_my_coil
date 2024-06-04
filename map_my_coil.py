@@ -49,8 +49,7 @@ for channel in scu_channels:
 # coils.
 cc=acc()
 
-# Set up a list of coil signs, determined by using the GUI and a
-# fluxgate to determine the sign
+
 coil_sign=[1]*50 # initialize all coil signs to 1
 
 # coils you want to set to -1
@@ -84,7 +83,25 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 # Tell the current controller to set all the voltages
-cc.set_all_voltages()
+
+def set_all_voltages():
+    with open('current.csv','r') as file:
+        for line in file:
+            if line.strip():  # Skip empty lines
+                try:
+                    coil,current=map(float,line.strip().split(","))
+                    coil=int(coil)
+                    current=float(current)
+                    if coil<0 or coil>49:
+                        print("Invalid coil %d"%(coil))
+                    else:
+                        print("Setting coil %2d %10.6f with sign %3d"%(coil,current,coil_sign[coil]))
+                        cc.set_current(coil,current*coil_sign[coil])
+                except ValueError:
+                    print("Error parsing line:", line)
+    #write_eeprom()
+
+set_all_voltages()
 
 
 last_position=positions[0]

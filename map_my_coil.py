@@ -13,14 +13,13 @@ import signal
 import sys
 import math
 from math import sqrt
-import serial
 import matplotlib.pyplot as plt
 # import asyncio
 
 # labjack import
 from labjack import ljm
 
-import re
+from arduino_current_controller_routines import *
 
 # Set up the mapper robot
 
@@ -48,8 +47,7 @@ for channel in scu_channels:
 
 # Open a connection to the Arduino, so that we can set currents on the
 # coils.
-import serial
-ser=serial.Serial('/dev/ttyACM0',115200)
+cc=acc()
 
 # Set up a list of coil signs, determined by using the GUI and a
 # fluxgate to determine the sign
@@ -85,87 +83,8 @@ def signal_handler(sig, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-
-def CheckReadUntil(readUntil):
-    outputCharacters = ""
-    while True:
-        ch = ser.read().decode()
-        if len(ch) == 0:
-            break
-        outputCharacters += ch
-        if outputCharacters[-len(readUntil):] == readUntil:
-            break
-    outputLines = ''.join(outputCharacters)
-    return outputLines
-
-def set_voltage(i,voltage):
-    ser.write(f'<STV {i} {voltage}>\n'.encode())
-    line=CheckReadUntil("V\r\n")
-    m=re.search("Voltage (\d+) set to ([-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?) V",line)
-    i_readback=int(m.group(1))
-    voltage_readback=float(m.group(2))
-    print(f"Arduino confirms voltage for i {i_readback} is {voltage_readback}")
-
-def set_current(i,current):
-    ser.write(f'<STC {i} {current}>\n'.encode())
-    line=CheckReadUntil("A\r\n")
-    m=re.search("Current (\d+) set to ([-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?) A",line)
-    i_readback=int(m.group(1))
-    current_readback=float(m.group(2))
-    print(f"Arduino confirms current for i {i_readback} is {current_readback}")
-
-def write_eeprom():
-    ser.write(f'<WRI>'.encode())
-    line=CheckReadUntil(".\r\n")
-    print(line)
-
-def turn_on():
-    ser.write(f'<ONA>'.encode())
-    line=CheckReadUntil(".\r\n")
-    print(line)
-
-def turn_off():
-    ser.write(f'<OFA>'.encode())
-    line=CheckReadUntil(".\r\n")
-    print(line)
-
-def turn_neg():
-    ser.write(f'<ONN>'.encode())
-    line=CheckReadUntil(".\r\n")
-    print(line)
-
-def zero_all_voltages():
-    ser.write(f'<ZERO>\n'.encode())
-    line = CheckReadUntil(ser, "Done zeroing.\r\n")
-    print(line)
-    if 'Done zeroing.' in line:
-        print("All voltages set to zero")
-    else:
-        print("Failed to set all voltages to zero")
-
-def set_all_voltages():
-    with open('current.csv','r') as file:
-        for line in file:
-            if line.strip():  # Skip empty lines
-                try:
-                    coil,current=map(float,line.strip().split(","))
-                    coil=int(coil)
-                    current=float(current)
-                    if coil<0 or coil>49:
-                        print("Invalid coil %d"%(coil))
-                    else:
-                        print("Setting coil %2d %10.6f"%(coil,current))
-                        set_current(coil,current)
-                except ValueError:
-                    print("Error parsing line:", line)
-    #write_eeprom()
-
-
-first_read=CheckReadUntil("voltage>\r\n")
-print(first_read)
-
-
-set_all_voltages()
+# Tell the current controller to set all the voltages
+cc.set_all_voltages()
 
 
 last_position=positions[0]
@@ -181,7 +100,7 @@ for position in positions:
     time.sleep(sleep_for)
 
     # turn on the coil
-    turn_on()
+    cc.turn_on()
     time.sleep(0.5)
     
     # make a measurement of the magnetic field
@@ -190,7 +109,7 @@ for position in positions:
     nT_on=[voltages_on[i]*100/10*1000 for i in range(len(voltages_on))]
 
     # turn off the coil
-    turn_off()
+    cc.turn_off()
     # make a measurement of the magnetic field
     time.sleep(0.5)
     voltages_off=[ljm.eReadName(handle,"AIN%s"%channel) for channel in scu_channels]

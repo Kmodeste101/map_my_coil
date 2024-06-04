@@ -27,7 +27,7 @@ class acc:
 
     def set_voltage(self,i,voltage):
         self.ser.write(f'<STV {i} {voltage}>\n'.encode())
-        line=CheckReadUntil("V\r\n")
+        line=self.CheckReadUntil("V\r\n")
         m=re.search("Voltage (\d+) set to ([-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?) V",line)
         i_readback=int(m.group(1))
         voltage_readback=float(m.group(2))
@@ -61,6 +61,15 @@ class acc:
         line=self.CheckReadUntil(".\r\n")
         print(line)
 
+    def set_voltage_now(self,i,voltage):
+        self.ser.write(f'<SVN {i} {voltage}>\n'.encode())
+        line=self.CheckReadUntil("V\r\n")
+        m=re.search("voltage (\d+) to ([-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?) V",line)
+        i_readback=int(m.group(1))
+        voltage_readback=float(m.group(2))
+        print(f"Arduino confirms voltage for i {i_readback} is {voltage_readback}")
+        
+        
     def zero_all_voltages(self):
         self.ser.write(f'<ZERO>\n'.encode())
         line=self.CheckReadUntil(ser, "Done zeroing.\r\n")

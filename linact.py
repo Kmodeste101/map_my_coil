@@ -42,8 +42,8 @@ class Carrier(Periphery):
 
     def __init__(self, name: str = 'Linear Actuator', velocity: int = 6000):
         constants = {
-            "Max_position": 80.0,
-            "Min_position": 0.0,
+            "Max_position": 30.0,
+            "Min_position": -30,
             "Max_y_position": 30.0,
             "Min_y_position": -30.0,
             "Max_velocity": 10000,

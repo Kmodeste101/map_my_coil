@@ -13,7 +13,7 @@ from linact import Carrier
 
 
 # Create a carrier object
-carrier = Carrier()
+carrier=Carrier()
 # initialize the carrier
 carrier.initialize()
 

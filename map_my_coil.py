@@ -28,6 +28,13 @@ carrier=Carrier()
 # initialize the carrier
 carrier.initialize()
 
+# load theoretical fields
+
+data=np.transpose(np.loadtxt('xscan.out'))
+x_sim,bx_sim,by_sim,bz_sim=data
+bx_sim=bx_sim*1e9 # convert to nT
+by_sim=by_sim*1e9
+bz_sim=bz_sim*1e9
 
 # Set up the labjack to read out the fluxgate magnetometer
 
@@ -119,26 +126,26 @@ for position in positions:
         znow=carrier.get_position(2)
         if sqrt((position[0]-xnow)**2+(position[1]-ynow)**2+(position[2]-znow)**2)<.001:
             in_position=True
-    time.sleep(1)
+    #time.sleep(200)
     
     # turn on the coil
     cc.turn_on()
-    time.sleep(0.3)
+    time.sleep(0.1)
     
     # make a measurement of the magnetic field
 
     voltages_on=[ljm.eReadName(handle,"AIN%s"%channel) for channel in scu_channels]
     nT_on=[voltages_on[i]*100/10*1000 for i in range(len(voltages_on))]
 
-    # turn off the coil
+    # turn neg the coil
     cc.turn_neg()
     # make a measurement of the magnetic field
-    time.sleep(0.3)
+    time.sleep(0.1)
     voltages_off=[ljm.eReadName(handle,"AIN%s"%channel) for channel in scu_channels]
     nT_off=[voltages_off[i]*100/10*1000 for i in range(len(voltages_on))]
 
     voltages_delta=[voltages_on[i]-voltages_off[i] for i in range(len(voltages_on))]
-    nT_delta=[(nT_on[i]-nT_off[i])/2 for i in range(len(voltages_on))]
+    nT_delta=[(nT_on[i]-nT_off[i])/2 for i in range(len(voltages_on))] # divide by two because subtracting neg from pos
     x_data.append(nT_delta[0])
     y_data.append(nT_delta[1])
     z_data.append(nT_delta[2])
@@ -151,10 +158,11 @@ for position in positions:
     cc.turn_off()
 
 
-plt.figure(figsize=(12, 6))
-plt.plot(range(len(positions)), x_data, label="X-axis")
-plt.plot(range(len(positions)), y_data, label="Y-axis")
-plt.plot(range(len(positions)), z_data, label="Z-axis")
+plt.figure(figsize=(12,6))
+plt.plot(range(len(positions)),x_data,label="X-axis")
+plt.plot(range(len(positions)),y_data,label="Y-axis")
+plt.plot(range(len(positions)),z_data,label="Z-axis")
+
 
 plt.xlabel("Position")
 plt.ylabel("Magnetic Field (nT)")

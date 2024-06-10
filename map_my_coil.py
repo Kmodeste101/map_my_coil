@@ -53,9 +53,8 @@ for channel in scu_channels:
 
 
 # Open a connection to the Arduino, so that we can set currents on the
-# coils.
+# coils.  This uses the acc "Arduino Current Controller" class.
 cc=acc()
-
 
 coil_sign=[1]*50 # initialize all coil signs to 1
 
@@ -77,7 +76,6 @@ with open(data_file_name, "w") as data_file:
 # List of positions where we would like to measure the magnetic field
 positions=np.mgrid[-25:26:1,0:1:1,0:1:1].reshape(3,-1).T
 print(positions)
-#quit()
 
 # Set up a signal handler that gracefully exits if Ctrl-C is pressed
 def signal_handler(sig, frame):
@@ -110,10 +108,13 @@ def set_all_voltages():
 
 set_all_voltages()
 
+fg_gain=1
+fg_settle=0.3 # seconds
+robo_wobble=0.1 # seconds
 
-x_data = []
-y_data = []
-z_data = []
+x_data=[]
+y_data=[]
+z_data=[]
 for position in positions:
     # move to that [x,y,z] position
     for i in range(3):
@@ -126,23 +127,24 @@ for position in positions:
         znow=carrier.get_position(2)
         if sqrt((position[0]-xnow)**2+(position[1]-ynow)**2+(position[2]-znow)**2)<.001:
             in_position=True
-    #time.sleep(200)
+    time.sleep(robo_wobble) # sleeping time to stop the wobbling
     
     # turn on the coil
     cc.turn_on()
-    time.sleep(0.1)
+    time.sleep(fg_settle)
     
     # make a measurement of the magnetic field
 
     voltages_on=[ljm.eReadName(handle,"AIN%s"%channel) for channel in scu_channels]
-    nT_on=[voltages_on[i]*100/10*1000 for i in range(len(voltages_on))]
+    print("raw voltages_on",voltages_on)
+    nT_on=[voltages_on[i]*100/10*1000/fg_gain for i in range(len(voltages_on))]
 
     # turn neg the coil
     cc.turn_neg()
     # make a measurement of the magnetic field
-    time.sleep(0.1)
+    time.sleep(fg_settle)
     voltages_off=[ljm.eReadName(handle,"AIN%s"%channel) for channel in scu_channels]
-    nT_off=[voltages_off[i]*100/10*1000 for i in range(len(voltages_on))]
+    nT_off=[voltages_off[i]*100/10*1000/fg_gain for i in range(len(voltages_on))]
 
     voltages_delta=[voltages_on[i]-voltages_off[i] for i in range(len(voltages_on))]
     nT_delta=[(nT_on[i]-nT_off[i])/2 for i in range(len(voltages_on))] # divide by two because subtracting neg from pos
@@ -157,11 +159,39 @@ for position in positions:
 
     cc.turn_off()
 
+# used to test graphing
+#x_data=range(len(positions))
+#y_data=range(len(positions))
+#z_data=range(len(positions))
+x_data=np.array(x_data)
+y_data=np.array(y_data)
+z_data=np.array(z_data)
+
+
+# fix measurement axes to be as in simulation
+
+# position:
+# The scan direction is the minus x direction in simulation
+
+# fluxgate measurement:
+
+# The fluxgate z-axis is aligned with the minus x direction in simulation.
+
+# The fluxgate y-axis is aligned with the minus z direction in simulation.
+
+# According to the right-hand rule, the fluxgate x-axis is aligned
+# with the plus y direction in simulation.
 
 plt.figure(figsize=(12,6))
-plt.plot(range(len(positions)),x_data,label="X-axis")
-plt.plot(range(len(positions)),y_data,label="Y-axis")
-plt.plot(range(len(positions)),z_data,label="Z-axis")
+plt.scatter(-positions[:,0]*.01,-z_data,color="b",label="$B_x(x,0,0)$ meas",marker='.')
+plt.scatter(-positions[:,0]*.01,x_data,color="r",label="$B_y(x,0,0)$ meas",marker='.')
+plt.scatter(-positions[:,0]*.01,-y_data,color="g",label="$B_z(x,0,0)$ meas",marker='.')
+
+# now plot simulation on top of this
+plt.plot(x_sim,bx_sim,color="b",label="$B_x(x,0,0)$ sim")
+plt.plot(x_sim,by_sim,color="r",label="$B_y(x,0,0)$ sim")
+plt.plot(x_sim,bz_sim,color="g",label="$B_z(x,0,0)$ sim")
+
 
 
 plt.xlabel("Position")

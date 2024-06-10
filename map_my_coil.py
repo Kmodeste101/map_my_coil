@@ -184,8 +184,8 @@ z_data=np.array(z_data)
 
 plt.figure(figsize=(12,6))
 plt.scatter(-positions[:,0]*.01,-z_data,color="b",label="$B_x(x,0,0)$ meas",marker='.')
-plt.scatter(-positions[:,0]*.01,x_data,color="r",label="$B_y(x,0,0)$ meas",marker='.')
-plt.scatter(-positions[:,0]*.01,-y_data,color="g",label="$B_z(x,0,0)$ meas",marker='.')
+plt.scatter(-positions[:,0]*.01,-x_data,color="r",label="$B_y(x,0,0)$ meas",marker='.')
+plt.scatter(-positions[:,0]*.01,y_data,color="g",label="$B_z(x,0,0)$ meas",marker='.')
 
 # now plot simulation on top of this
 plt.plot(x_sim,bx_sim,color="b",label="$B_x(x,0,0)$ sim")

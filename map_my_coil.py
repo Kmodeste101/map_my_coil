@@ -155,7 +155,7 @@ for position in positions:
     print(f"Position: {position}, Magnetic Field Measurements (X, Y, Z): {nT_delta}")
 
     with open(data_file_name, "a") as data_file:  # Open the file in append mode
-         data_file.write(f"{position} | {nT_delta}\n")
+         data_file.write(f"{position[0]} {position[1]} {position[2]} {nT_delta[0]} {nT_delta[1]} {nT_delta[2]}\n")
 
     cc.turn_off()
 
@@ -201,6 +201,8 @@ plt.legend()
 
 carrier.shutdown()
 ljm.close(handle)
+
+plt.savefig("/home/jmartin/Desktop/delete_later/field_measurements_l_0_m_1.png",dpi=300,bbox_inches='tight')
 
 plt.show()
 

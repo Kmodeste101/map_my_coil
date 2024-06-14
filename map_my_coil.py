@@ -36,6 +36,18 @@ bx_sim=bx_sim*1e9 # convert to nT
 by_sim=by_sim*1e9
 bz_sim=bz_sim*1e9
 
+
+data=np.transpose(np.loadtxt('xscan_target.out'))
+x_target,bx_target,by_target,bz_target=data
+bx_target=bx_target*1e9 # convert to nT
+by_target=by_target*1e9
+bz_target=bz_target*1e9
+
+# load metadata about the theoretical fields
+import json
+with open('data.json') as json_file:
+    graphdata=json.load(json_file)
+
 # Set up the labjack to read out the fluxgate magnetometer
 
 # open a connection to the labjack and set the ranges for measurement
@@ -69,23 +81,23 @@ for coil in coils_to_set_negative:
 
 
 # Prepare a data file to write results to
-data_file_name="voltage_data.txt"
+data_file_name="voltage_data_%d_%d.txt"%(graphdata["l"],graphdata["m"])
 with open(data_file_name, "w") as data_file:
-     data_file.write("Position (X, Y, Z) | Voltages (X, Y, Z)\n")
+     data_file.write("xmapper (cm), ymapper (cm), zmapper (cm), Bx_fg (nT), By_fg (nT), Bz_fg (nT)\n")
 
 # List of positions where we would like to measure the magnetic field
 positions=np.mgrid[-25:26:1,0:1:1,0:1:1].reshape(3,-1).T
 print(positions)
 
 # Set up a signal handler that gracefully exits if Ctrl-C is pressed
-def signal_handler(sig, frame):
+def signal_handler(sig,frame):
     print('You pressed Ctrl+C!')
     time.sleep(10)
     carrier.shutdown()
     ljm.close(handle)
     sys.exit(0)
 
-signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGINT,signal_handler)
 
 # Tell the current controller to set all the voltages
 
@@ -182,7 +194,7 @@ z_data=np.array(z_data)
 # According to the right-hand rule, the fluxgate x-axis is aligned
 # with the plus y direction in simulation.
 
-plt.figure(figsize=(12,6))
+plt.figure()
 plt.scatter(-positions[:,0]*.01,-z_data,color="b",label="$B_x(x,0,0)$ meas",marker='.')
 plt.scatter(-positions[:,0]*.01,-x_data,color="r",label="$B_y(x,0,0)$ meas",marker='.')
 plt.scatter(-positions[:,0]*.01,y_data,color="g",label="$B_z(x,0,0)$ meas",marker='.')
@@ -193,16 +205,32 @@ plt.plot(x_sim,by_sim,color="r",label="$B_y(x,0,0)$ sim")
 plt.plot(x_sim,bz_sim,color="g",label="$B_z(x,0,0)$ sim")
 
 
+plt.plot(x_target,bx_target,'--',color="b",label="$B_x(x,0,0)=%s$"%(graphdata['Pix']))
+plt.plot(x_target,by_target,'--',color="r",label="$B_y(x,0,0)=%s$"%(graphdata['Piy']))
+plt.plot(x_target,bz_target,'--',color="g",label="$B_z(x,0,0)=%s$"%(graphdata['Piz']))
 
-plt.xlabel("Position")
+plt.xlabel("Position along $x$-axis (cm)")
 plt.ylabel("Magnetic Field (nT)")
-plt.title("Magnetic Field Measurements")
-plt.legend()
+
+
+
+ax=plt.gca()
+h,l=ax.get_legend_handles_labels()
+ph=[plt.plot([],marker="", ls="")[0]]*3
+#handles=[ph[0]]+h[::3]+[ph[1]]+h[1::3]+[ph[2]]+h[2::3]
+#labels=["Title 1:"]+l[::3]+["Title 2:"]+l[1::3]+["Title 3:"]+l[2::3]
+handles=[ph[0]]+h[0:3]+[ph[1]]+h[3:6]+[ph[2]]+h[6:9]
+labels=[r'\underline{Measured}']+l[0:3]+[r"\underline{Simulated}"]+l[3:6]+[r"\underline{Target} $(\ell,m)=(%d,%d)$"%(graphdata['l'],graphdata['m'])]+l[6:9]
+
+plt.rc('text',usetex=True)
+plt.xlabel("Position along $x$-axis (cm)")
+plt.ylabel("Magnetic Field (nT)")
+plt.legend(handles, labels, ncol=3)
 
 carrier.shutdown()
 ljm.close(handle)
 
-plt.savefig("/home/jmartin/Desktop/delete_later/field_measurements_l_0_m_1.png",dpi=300,bbox_inches='tight')
+plt.savefig("/home/jmartin/Desktop/delete_later/field_measurements_%d_%d.png"%(graphdata['l'],graphdata['m']),dpi=300,bbox_inches='tight')
 
 plt.show()
 

@@ -230,7 +230,7 @@ plt.legend(handles, labels, ncol=3)
 carrier.shutdown()
 ljm.close(handle)
 
-plt.savefig("/home/jmartin/Desktop/delete_later/field_measurements_%d_%d.png"%(graphdata['l'],graphdata['m']),dpi=300,bbox_inches='tight')
+plt.savefig("field_measurements_%d_%d.png"%(graphdata['l'],graphdata['m']),dpi=300,bbox_inches='tight')
 
 plt.show()
 
